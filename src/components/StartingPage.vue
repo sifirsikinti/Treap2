@@ -7,15 +7,37 @@
 
     <div class="routePlanner">
       <h1>Dein Reiseplaner</h1>
+      
+      <!-- Startort InputGroup -->
       <div class="inputGroup">
-        <span class="icon">&#9992;</span> <!-- Flugzeug Icon -->
-        <input v-model="cityName" @input="searchCities" type="text" placeholder="Startort" />
-        <ul v-if="cities.length">
-          <li v-for="city in cities" :key="city.id">{{ city.name }}</li>
-        </ul>
-        <span class="icon">&#9992;</span> <!-- Flugzeug Icon -->
-        <input type="text" placeholder="Zielort" />
+        <div class="inputWithIcon">
+          <span class="icon">&#9992;</span> <!-- Flugzeug Icon -->
+          <input v-model="cityName" @input="searchCities" type="text" placeholder="Startort" />
+        </div>
+        <div class="dropdownContainer" v-if="cities.length">
+          <div class="dropdown">
+            <div v-for="city in cities" :key="city.id" @click="selectCity(city)" class="dropdown-item">
+              {{ city.name }}
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- Zielort InputGroup -->
+      <div class="inputGroup">
+        <div class="inputWithIcon">
+          <span class="icon">&#9992;</span> <!-- Flugzeug Icon -->
+          <input v-model="destinationName" @input="searchDestinations" type="text" placeholder="Zielort" />
+        </div>
+        <div class="dropdownContainer" v-if="destinations.length">
+          <div class="dropdown">
+            <div v-for="destination in destinations" :key="destination.id" @click="selectDestination(destination)" class="dropdown-item">
+              {{ destination.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button class="plan">
         <span class="buttonIcon">&#128269;</span> Suchen
       </button>
@@ -23,30 +45,59 @@
   </div>
 </template>
 
+
+
 <script>
 import axios from 'axios';
 
 export default {
   name: "StartingPage",
   data() {
-    return {
-      cityName: '',
-      cities: [],
-    };
-  },
-  methods: {
-    async searchCities() {
-      if (this.cityName.length < 3) return; // Vermeide unnötige Anfragen bei zu kurzer Eingabe
+  return {
+    cityName: '',
+    cities: [],
+    destinationName: '', // Neuer v-model Wert für das Zielland
+    destinations: [], // Liste der Vorschläge für das Zielland
+  };
+},
+methods: {
+  async searchCities() {
+    if (this.cityName.length < 3) {
+      this.cities = []; // Leere die Liste, wenn weniger als 3 Buchstaben eingegeben wurden
+      return; // Beende die Methode vorzeitig
+    }
 
-      try {
-        const response = await axios.get(`http://localhost:3000/search-cities?keyword=${this.cityName}`);
-        this.cities = response.data.data; // Passt die Zuweisung an die Struktur der API-Antwort an
-      } catch (error) {
-        console.error('Fehler beim Abrufen der Städte:', error);
-        this.cities = [];
-      }
-    },
+    try {
+      const response = await axios.get(`http://localhost:3000/search-cities?keyword=${this.cityName}`);
+      this.cities = response.data.data; // Aktualisiere die Liste mit den neuen Vorschlägen
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Städte:', error);
+      this.cities = []; // Leere die Liste im Fehlerfall
+    }
   },
+  async searchDestinations() {
+    if (this.destinationName.length < 3) {
+      this.destinations = []; // Leere die Liste, wenn weniger als 3 Buchstaben eingegeben wurden
+      return; // Beende die Methode vorzeitig
+    }
+
+    try {
+      const response = await axios.get(`http://localhost:3000/search-cities?keyword=${this.destinationName}`);
+      this.destinations = response.data.data; // Aktualisiere die Liste mit den neuen Vorschlägen
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Ziele:', error);
+      this.destinations = []; // Leere die Liste im Fehlerfall
+    }
+  },
+  selectCity(city) {
+    this.cityName = city.name; // Aktualisiere den Namen der ausgewählten Stadt
+    this.cities = []; // Leere die Liste der Vorschläge
+  },
+  selectDestination(destination) {
+    this.destinationName = destination.name; // Aktualisiere den Namen der ausgewählten Stadt
+    this.destinations = []; // Leere die Liste der Vorschläge
+  },
+},
   mounted() {
     // Beispiel für das Setzen eines Hintergrundbildes, angepasst an deine Projektstruktur
     document.documentElement.style.setProperty('--background-image-url', `url(${require('@/assets/background2.png')})`);
@@ -116,8 +167,10 @@ html, body {
 
 .inputGroup {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: center; /* Zentriert die Elemente vertikal */
+  width: 100%;
+  position: relative;
 }
 
 .routePlanner input {
@@ -149,5 +202,57 @@ html, body {
 
 .icon, .buttonIcon {
   margin-right: 10px;
+}
+
+.dropdown {
+  width: 100%; /* Setze die Breite des Dropdowns auf die des Containers */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+}
+
+.dropdown-item {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f9f9f9;
+}
+
+/* Anpassung für das inputGroup-Div, um die absolute Positionierung der Dropdowns zu unterstützen */
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+}
+
+/* Anpassungen für das routePlanner-Div, um Platz für das Dropdown zu schaffen */
+.routePlanner {
+  padding-bottom: 80px; /* Erhöhe den unteren Abstand, um Platz für das Dropdown zu schaffen */
+}
+
+.inputWithIcon {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+}
+
+.dropdownContainer {
+  width: calc(100% - 40px); /* Ziehe den Platz für das Icon ab */
+  max-width: 220px; /* Die maximale Breite des Dropdown-Menus */
+  position: absolute;
+  top: 35px; /* Die Höhe des Input-Feldes + ein kleiner Abstand */
+  left: 50%;
+  transform: translateX(-50%); /* Zentriert den Container horizontal */
+  z-index: 5;
 }
 </style>
